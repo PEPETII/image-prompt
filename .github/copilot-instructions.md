@@ -221,7 +221,6 @@ realistic, anime, cinematic, product, cyberpunk, 3dicon
 - 不改变现有消息类型命名或通信流程
 - 不在代码中添加 emoji
 - 不创建新的目录结构（除非任务要求）
-- 不修改 store-assets/ 目录内容
 - 不修改 .npmcache/ 目录内容
 - 不改变 Tab 显示逻辑（格式决定 Tab，语言决定内容）
 

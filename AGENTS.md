@@ -4,7 +4,7 @@
 
 Chrome / Edge 浏览器扩展（Manifest V3），右键图片调用 AI 视觉模型反推生图提示词。原生 JavaScript，无构建步骤，无框架依赖。
 
-详细规则与禁止行为见同目录的 `.cursorrules` 与 `.github/copilot-instructions.md`（二者内容一致）。本文档只补充这些文件未覆盖或已偏离实际代码的关键事实。
+详细规则与禁止行为见 `.github/copilot-instructions.md`。本文档只补充该文件未覆盖或已偏离实际代码的关键事实。
 
 ## 加载与调试
 
@@ -34,7 +34,6 @@ imgprompter/                 扩展主体（chrome 加载的就是这一层）
   docs/                      自检报告
   _locales/zh_CN/            i18n 字符串（manifest 引用 __MSG_*__）
 imgprompter-*.zip            商店发布包，不要修改或重新生成
-store-assets/                商店素材，不要修改
 .npmcache/                   npm 缓存，不要修改
 ```
 
@@ -152,7 +151,7 @@ store-assets/                商店素材，不要修改
   - `input` 与切 Tab 前 `syncPromptFromEditor()` 写入 `currentJson.prompt_zh` / `prompt_en`
   - **「保存为当前结果」**：`applyPromptSave()` 同步字段、`plain` 时更新 `currentRaw`（`---` 规则与 net 一致）、刷新 preview 与当前 JSON Tab；**不写** `imgprompter_hist`、**不调** API
   - **指令式重写**（底部风格按钮 +「修改」）保留：`requestRewrite` 前 `syncPromptFromEditor()`；重写中 `setPromptEditorDisabled(true)`
-- MJ/SD 专用 Tab 仍为只读；Tab 展示语义见 `.cursorrules`（MJ/SD 缺字段时 fallback `prompt_en`）
+- MJ/SD 专用 Tab 仍为只读；Tab 展示语义见 `.github/copilot-instructions.md`（MJ/SD 缺字段时 fallback `prompt_en`）
 - `plain` 格式：AI 返回用 `---` 分隔，`lines[0]` → `prompt_zh`，`lines[last]` → `prompt_en`
 - 修改输入框 Enter 提交，6 种风格按钮复用 `imgprompter-rewrite`
 
@@ -189,7 +188,7 @@ store-assets/                商店素材，不要修改
 - 不在代码中加注释（除非用户明确要求）
 - 不引入 npm/CDN/框架
 - 不修改 `manifest.json` 的 `version` / 权限（除非任务要求）
-- 不修改 `store-assets/`、`.npmcache/`、根目录 `*.zip` 商店包
+- 不修改 `.npmcache/`、根目录 `*.zip` 商店包
 - 不添加 emoji
 - 不创建新的目录结构（除非任务要求）
 - 不改变消息 type 命名、Tabs 顺序、provider 切换逻辑
