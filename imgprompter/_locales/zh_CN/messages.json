@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "看图写提示词",
+    "description": "扩展名称"
+  },
+  "extensionDescription": {
+    "message": "右键图片，AI 反推生图提示词。支持中英双语、JSON 结构化、风格快捷切换与二次修改。",
+    "description": "扩展简介"
+  }
+}

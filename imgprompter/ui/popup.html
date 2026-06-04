@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>看图写提示词</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <img src="../res/icon-48.png" alt="logo" class="app-logo">
+      <h1 class="app-title">看图写提示词</h1>
+    </header>
+
+    <nav class="app-nav">
+      <button class="nav-btn active" data-tab="vision">识图设置</button>
+      <button class="nav-btn" data-tab="gen">生图设置</button>
+      <button class="nav-btn" data-tab="history">历史</button>
+    </nav>
+
+    <main class="app-body">
+      <section id="tab-vision" class="tab-pane visible">
+        <div class="form-group">
+          <label class="form-label" for="select-platform">AI 平台</label>
+          <select id="select-platform" class="form-select">
+            <option value="custom">自定义</option>
+            <option value="openai">OpenAI</option>
+            <option value="gemini">Gemini（Google）</option>
+            <option value="doubao">豆包（火山引擎）</option>
+            <option value="ali">阿里（通义千问）</option>
+            <option value="kimi">Kimi（月之暗面）</option>
+            <option value="siliconflow">硅基流动</option>
+            <option value="mimo">小米 MiMo</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="input-api-url">API 地址</label>
+          <input id="input-api-url" type="url" class="form-input" placeholder="https://api.example.com/v1" autocomplete="off">
+          <p class="form-hint">请填写完整的 HTTPS 地址，例如 https://api.example.com/v1</p>
+          <p class="field-err" id="err-api-url"></p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="input-api-key">API Key</label>
+          <div class="input-with-toggle">
+            <input id="input-api-key" type="password" class="form-input" placeholder="sk-..." autocomplete="off">
+            <button id="btn-toggle-key" class="toggle-key" type="button" aria-label="显示或隐藏密钥">
+              <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.48 9.48 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
+          <p class="form-hint">密钥仅保存在浏览器本地，不上传到作者服务器；调用配置的 API 时用于认证</p>
+          <p class="field-err" id="err-api-key"></p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="select-vision-preset-model" id="label-model">模型名称</label>
+          <select id="select-vision-preset-model" class="form-select ip-model-picker-hidden"></select>
+          <input id="input-model" type="text" class="form-input" placeholder="gpt-5.2" autocomplete="off">
+          <p class="form-hint" id="hint-model">OpenAI 识图仅支持 gpt-5 系列（如 gpt-5.2、gpt-5-mini）；其它平台见各自说明；实际可用性以你的 API 权限为准</p>
+          <p class="field-err" id="err-model"></p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="select-lang">输出语言</label>
+          <select id="select-lang" class="form-select">
+            <option value="zh" selected>中文</option>
+            <option value="en">英文</option>
+            <option value="both">中英双语</option>
+          </select>
+          <p class="form-hint" id="hint-lang">选择「中英双语」时，建议使用 JSON 格式，一次输出双语字段，避免 plain 双段文本。</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="select-format">默认格式</label>
+          <select id="select-format" class="form-select">
+            <option value="plain">普通提示词</option>
+            <option value="json" selected>JSON（推荐识图）</option>
+            <option value="detail">详细（字段多、耗 token）</option>
+            <option value="mj">Midjourney</option>
+            <option value="sd">Stable Diffusion</option>
+          </select>
+        </div>
+
+        <div class="form-group form-group-toggle">
+          <label class="form-label" for="toggle-thinking">思考模式</label>
+          <div class="toggle-row">
+            <p class="toggle-desc">默认关闭。开启后更细致但更慢、消耗更多 tokens；追求速度请保持关闭并使用 flash/nano/lite 模型</p>
+            <label class="switch">
+              <input id="toggle-thinking" type="checkbox">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button id="btn-test" class="btn btn-outline">测试连接</button>
+          <button id="btn-save" class="btn btn-primary">保存配置</button>
+          <button id="btn-clear" class="btn btn-danger">清除配置</button>
+        </div>
+
+        <p id="settings-msg" class="form-msg"></p>
+      </section>
+
+      <section id="tab-gen" class="tab-pane">
+        <div class="form-group">
+          <label class="form-label" for="select-gen-platform">AI 平台</label>
+          <select id="select-gen-platform" class="form-select">
+            <option value="custom">自定义</option>
+            <option value="openai">OpenAI</option>
+            <option value="gemini">Gemini（Google）</option>
+            <option value="doubao">豆包（火山引擎）</option>
+            <option value="ali">阿里（通义千问）</option>
+            <option value="siliconflow">硅基流动</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="input-gen-api-url">API 地址</label>
+          <input id="input-gen-api-url" type="url" class="form-input" placeholder="https://api.example.com/v1" autocomplete="off">
+          <p class="form-hint">支持完整生图地址，或 base 地址（OpenAI 系拼接 /images/generations；Gemini 拼接 generateContent；阿里 DashScope 拼接 multimodal-generation）</p>
+          <p class="field-err" id="err-gen-api-url"></p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="input-gen-api-key">API Key</label>
+          <div class="input-with-toggle">
+            <input id="input-gen-api-key" type="password" class="form-input" placeholder="sk-... 或 ark-..." autocomplete="off">
+            <button id="btn-toggle-gen-key" class="toggle-key" type="button" aria-label="显示或隐藏密钥">
+              <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.48 9.48 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
+          <p class="form-hint">生图密钥与识图配置分开保存，仅用于生图请求</p>
+          <p class="field-err" id="err-gen-api-key"></p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="select-gen-preset-model" id="label-gen-model">模型名称</label>
+          <select id="select-gen-preset-model" class="form-select ip-model-picker-hidden"></select>
+          <input id="input-gen-model" type="text" class="form-input" placeholder="gpt-image-1.5" autocomplete="off">
+          <p class="form-hint" id="hint-gen-model">需支持图片生成，例如 gpt-image-1.5、image2、gemini-2.5-flash-image；实际可用性以你的 API 权限为准。测试连接可能产生少量 API 费用</p>
+          <p class="field-err" id="err-gen-model"></p>
+        </div>
+
+        <div class="form-actions">
+          <button id="btn-gen-test" class="btn btn-outline">测试连接</button>
+          <button id="btn-gen-save" class="btn btn-primary">保存配置</button>
+          <button id="btn-gen-clear" class="btn btn-danger">清除生图配置</button>
+        </div>
+
+        <p id="gen-settings-msg" class="form-msg"></p>
+      </section>
+
+      <section id="tab-history" class="tab-pane">
+        <div class="history-head">
+          <span class="history-head-title">分析历史</span>
+          <button id="btn-clear-history" class="btn btn-danger btn-xs">清空历史</button>
+        </div>
+        <div id="history-list" class="history-list"></div>
+        <div id="history-empty" class="history-empty">暂无历史记录</div>
+      </section>
+    </main>
+  </div>
+  <script src="../core/store.js"></script>
+  <script src="../core/err.js"></script>
+  <script src="../core/prompts.js"></script>
+  <script src="../core/parse.js"></script>
+  <script src="../core/net.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

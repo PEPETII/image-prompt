@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:440px;height:280px;overflow:hidden}
+body{font-family:"Microsoft YaHei","Segoe UI",sans-serif;background:#f6f1e7;color:#1e2329}
+.canvas{position:relative;width:440px;height:280px;overflow:hidden;background:linear-gradient(135deg,#f7efe0 0%,#e9f5ef 52%,#dfe9ff 100%)}
+.grain{position:absolute;inset:0;opacity:.2;background-image:radial-gradient(#111 0.5px,transparent 0.5px);background-size:7px 7px;mix-blend-mode:multiply}
+.blob{position:absolute;border-radius:999px;filter:blur(2px);opacity:.85}
+.b1{background:#ffbe6f}.b2{background:#85d6b5}.b3{background:#8aa8ff}.b4{background:#ff8c8c}
+.card{position:absolute;background:rgba(255,255,255,.78);border:1px solid rgba(40,55,70,.12);box-shadow:0 24px 60px rgba(48,60,72,.18);backdrop-filter:blur(14px)}
+.badge{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(32,45,60,.14);background:rgba(255,255,255,.62);border-radius:999px;color:#354256;font-weight:700}
+.title{font-weight:900;letter-spacing:-.06em;color:#161b22}
+.subtitle{color:#44505f;line-height:1.45}
+.pill{display:inline-flex;align-items:center;border-radius:999px;background:#17202a;color:#fff;font-weight:700}
+.imageMock{background:linear-gradient(145deg,#25415d,#5fa587 55%,#f0c66c);position:relative;overflow:hidden}
+.imageMock:before{content:"";position:absolute;left:16%;top:14%;width:42%;height:60%;border-radius:48% 48% 42% 42%;background:linear-gradient(#f7d6b2,#b46a52)}
+.imageMock:after{content:"";position:absolute;right:8%;bottom:8%;width:68%;height:32%;border-radius:50% 50% 0 0;background:rgba(255,255,255,.34)}
+.prompt{font-family:"Cascadia Mono","Consolas",monospace;color:#27313c;line-height:1.45}
+.toolbar{display:flex;gap:10px;align-items:center}
+.dot{width:10px;height:10px;border-radius:50%}
+
+</style>
+</head>
+<body><div class="canvas">
+    <div class="grain"></div>
+    <div class="blob b1" style="width:170px;height:170px;left:-58px;top:-54px"></div>
+    <div class="blob b2" style="width:210px;height:210px;right:-92px;bottom:-74px"></div>
+    <div class="card imageMock" style="width:142px;height:96px;right:34px;top:42px;border-radius:24px"></div>
+    <div class="card" style="width:178px;height:112px;right:26px;bottom:34px;border-radius:22px;padding:16px">
+      <div class="toolbar"><span class="dot" style="background:#f56"></span><span class="dot" style="background:#fdc14d"></span><span class="dot" style="background:#4bc57d"></span></div>
+      <div class="prompt" style="font-size:10px;margin-top:10px">portrait, soft light,<br>cinematic details,<br>structured prompt</div>
+    </div>
+    <div style="position:absolute;left:34px;top:34px;width:230px">
+      <div class="badge" style="font-size:12px;padding:7px 11px">AI 图片提示词</div>
+      <div class="title" style="font-size:42px;line-height:.95;margin-top:18px">看图写<br>提示词</div>
+      <div class="subtitle" style="font-size:15px;margin-top:14px">右键图片，生成结构化 AI 生图提示词</div>
+    </div>
+  </div></body>
+</html>

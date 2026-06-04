@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>二次修改</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:1280px;height:800px;overflow:hidden}
+body{font-family:"Microsoft YaHei","Segoe UI",sans-serif;background:#f5efe4;color:#19212b}
+.page{position:relative;width:1280px;height:800px;overflow:hidden;background:linear-gradient(135deg,#f7efdf 0%,#e8f5ed 54%,#dfe8ff 100%)}
+.page:before{content:"";position:absolute;inset:0;opacity:.15;background-image:radial-gradient(#1f2937 .6px,transparent .6px);background-size:8px 8px}
+.orb{position:absolute;border-radius:50%;filter:blur(2px);opacity:.82}
+.o1{width:360px;height:360px;left:-130px;top:-120px;background:#ffbe6f}
+.o2{width:460px;height:460px;right:-160px;bottom:-180px;background:#88d8b2}
+.wrap{position:relative;z-index:1;display:grid;grid-template-columns:470px 1fr;gap:54px;padding:58px 68px}
+.intro{padding-top:18px}
+.badge{display:inline-flex;border:1px solid rgba(20,30,44,.16);background:rgba(255,255,255,.66);border-radius:999px;padding:10px 16px;font-weight:800;color:#344055}
+h1{font-size:56px;line-height:1;margin:22px 0 18px;letter-spacing:-.055em}
+.sub{font-size:22px;line-height:1.48;color:#4b5665}
+.panel{background:rgba(255,255,255,.76);border:1px solid rgba(40,55,70,.14);box-shadow:0 24px 64px rgba(44,58,76,.18);border-radius:34px;padding:30px;min-height:600px;backdrop-filter:blur(14px)}
+.popup{width:430px;min-height:600px;background:#fff;border-radius:28px;box-shadow:0 22px 60px rgba(32,45,64,.2);overflow:hidden}
+.popupHead{display:flex;align-items:center;gap:14px;padding:24px 26px;background:#17202a;color:#fff}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#ffbe6f,#88d8b2)}
+.tabs{display:flex;padding:14px;background:#f4f6f8;gap:10px}
+.tab{padding:10px 20px;border-radius:999px;background:#17202a;color:#fff;font-weight:800}.tab.alt{background:#fff;color:#435063}
+.field{margin:20px 24px}.label{font-weight:900;margin-bottom:8px}.input{height:46px;border:1px solid #d7dde5;border-radius:14px;background:#f9fafb;padding:12px 14px;color:#586273}.hint{font-size:13px;color:#737f8e;margin-top:7px}
+.btnRow{display:flex;gap:10px;margin:26px 24px}.btn{padding:13px 16px;border-radius:14px;background:#17202a;color:#fff;font-weight:900}.btn.light{background:#eef2f5;color:#263241}.btn.danger{background:#b54949}
+.browser{background:#fff;border-radius:30px;overflow:hidden;box-shadow:0 22px 60px rgba(32,45,64,.18)}
+.bar{height:54px;background:#eef2f5;display:flex;align-items:center;gap:8px;padding:0 20px}.dot{width:12px;height:12px;border-radius:50%}.addr{height:30px;border-radius:999px;background:#fff;flex:1;margin-left:12px}
+.photo{height:390px;margin:28px;border-radius:28px;background:linear-gradient(145deg,#25415d,#5fa587 55%,#f0c66c);position:relative;overflow:hidden}
+.photo:before{content:"";position:absolute;left:20%;top:14%;width:34%;height:66%;border-radius:48% 48% 42% 42%;background:linear-gradient(#f7d6b2,#b46a52)}
+.menu{position:absolute;left:92px;top:322px;width:260px;border-radius:18px;background:#fff;padding:12px;box-shadow:0 18px 45px rgba(0,0,0,.24)}.menuItem{padding:15px;border-radius:12px;font-weight:900}.menuItem.active{background:#17202a;color:#fff}
+.overlay{position:absolute;right:88px;top:164px;width:390px;background:#fff;border-radius:28px;box-shadow:0 24px 70px rgba(0,0,0,.22);padding:24px}
+.progress{height:14px;border-radius:999px;background:#e6ebf1;overflow:hidden;margin:22px 0}.progress div{height:100%;background:linear-gradient(90deg,#315b4b,#8aa8ff)}
+.prompt{font-family:"Cascadia Mono","Consolas",monospace;line-height:1.55}
+.json{background:#17202a;color:#eaf2ff;border-radius:22px;padding:24px;white-space:pre-wrap;font-size:17px}
+.chips{display:flex;flex-wrap:wrap;gap:12px}.chip{border-radius:999px;background:#17202a;color:#fff;padding:12px 18px;font-weight:900}.chip.green{background:#315b4b}.chip.blue{background:#495a99}.chip.gold{background:#9a6a31}
+.hist{display:grid;gap:16px}.histCard{display:flex;gap:16px;align-items:center;background:#fff;border-radius:20px;padding:16px}.thumb{width:78px;height:58px;border-radius:14px;background:linear-gradient(145deg,#25415d,#5fa587 55%,#f0c66c)}
+</style>
+</head>
+<body><div class="page"><div class="orb o1"></div><div class="orb o2"></div><div class="wrap"><div class="intro"><div class="badge">Screenshot 5</div><h1>二次修改提示词</h1><div class="sub">通过快捷风格或自定义要求，整体重写提示词。</div></div><div class="panel"><div style="font-size:26px;font-weight:900;margin-bottom:24px">风格快捷修改</div><div class="chips"><span class="chip">写实</span><span class="chip blue">动漫</span><span class="chip green">电影感</span><span class="chip gold">产品摄影</span><span class="chip blue">赛博朋克</span><span class="chip green">3D 图标</span></div><div style="margin-top:34px;background:#fff;border-radius:20px;padding:20px;font-size:22px;color:#596574">输入修改要求，例如：改成水彩画风格...</div><div style="margin-top:30px" class="btn">修改</div></div></div></div></body>
+</html>
