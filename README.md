@@ -1,6 +1,9 @@
 # ImgPrompter Repository
 
-本仓库当前只以 `imgprompter/` 作为正式开源项目目录。
+![Uploading 屏幕截图 2026-06-04 232334.png…]()
+
+![Uploading 屏幕截图 2026-06-04 232334.png…]()
+
 
 ## 项目用途
 
