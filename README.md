@@ -1,6 +1,8 @@
 # ImgPrompter Repository
 
-本仓库当前只以 `imgprompter/` 作为正式开源项目目录。
+<img width="569" height="902" alt="屏幕截图 2026-06-04 232334" src="https://github.com/user-attachments/assets/5a25c995-06c0-414d-b13a-f7d211f38194" />
+<img width="2523" height="1238" alt="屏幕截图 2026-06-04 233650" src="https://github.com/user-attachments/assets/c7c0b3fa-24b3-496a-baf9-a8fd5255d057" />
+
 
 ## 项目用途
 
