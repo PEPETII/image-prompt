@@ -95,6 +95,15 @@
           </div>
         </div>
 
+        <div class="form-group">
+          <label class="form-label" for="select-image-quality">图片质量</label>
+          <select id="select-image-quality" class="form-select">
+            <option value="fast">快速：速度快，适合普通图片</option>
+            <option value="standard" selected>标准：推荐</option>
+            <option value="high">高清：细节更好，但更慢、更耗 token</option>
+          </select>
+        </div>
+
         <div class="form-actions">
           <button id="btn-test" class="btn btn-outline">测试连接</button>
           <button id="btn-save" class="btn btn-primary">保存配置</button>
@@ -164,11 +173,18 @@
       </section>
     </main>
   </div>
+  <script src="../core/model_presets.js"></script>
   <script src="../core/store.js"></script>
   <script src="../core/err.js"></script>
   <script src="../core/prompts.js"></script>
   <script src="../core/parse.js"></script>
+  <script src="../core/providers/index.js"></script>
+  <script src="../core/providers/openai_compatible.js"></script>
+  <script src="../core/providers/openai.js"></script>
+  <script src="../core/providers/gemini.js"></script>
+  <script src="../core/providers/ali.js"></script>
   <script src="../core/net.js"></script>
+  <script src="popup_history.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

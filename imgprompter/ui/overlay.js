@@ -17,6 +17,7 @@
   var currentPanelMode = "prompt";
   var generatingImage = false;
   var barAnimTimers = [];
+  var cachedQualityMode = "standard";
 
   var JSON_FIELD_LABELS = {
     brief: "摘要",
@@ -84,6 +85,55 @@
   function removeHost() {
     var host = document.getElementById(SHADOW_HOST_ID);
     if (host) host.remove();
+  }
+
+  function buildHistoryJson(record) {
+    var json = null;
+    if (record && record.json && typeof record.json === "object") {
+      json = JSON.parse(JSON.stringify(record.json));
+    } else if (record) {
+      json = {};
+      if (record.brief) json.brief = record.brief;
+      if (record.prompt_zh) json.prompt_zh = record.prompt_zh;
+      if (record.prompt_en) json.prompt_en = record.prompt_en;
+      if (record.prompt_mj) json.prompt_mj = record.prompt_mj;
+      if (record.mj_params) json.mj_params = record.mj_params;
+      if (record.prompt_sd) json.prompt_sd = record.prompt_sd;
+      if (record.sd_negative) json.sd_negative = record.sd_negative;
+      if (record.negative_prompt) json.negative_prompt = record.negative_prompt;
+    }
+    return json;
+  }
+
+  function hasHistoryContent(record) {
+    if (!record) return false;
+    if (record.json && typeof record.json === "object") return true;
+    if (record.brief) return true;
+    if (record.prompt_zh || record.prompt_en) return true;
+    if (record.prompt_mj || record.mj_params) return true;
+    if (record.prompt_sd || record.sd_negative) return true;
+    return false;
+  }
+
+  function openHistoryRecord(record) {
+    if (!record || !hasHistoryContent(record)) {
+      showError("历史记录内容为空，无法打开", "无法显示");
+      return;
+    }
+
+    currentImgSrc = (record && record.imgSrc) || "";
+    currentPageUrl = (record && record.pageUrl) || location.href;
+    currentFormat = (record && record.format) || "json";
+    currentLang = (record && record.lang) || "zh";
+    currentJson = buildHistoryJson(record);
+    currentRaw = "";
+    rewriting = false;
+    generatingImage = false;
+    barAnimTimers.forEach(clearTimeout);
+    barAnimTimers = [];
+
+    ensureHost();
+    showResultPanel(currentJson, "", false, currentFormat);
   }
 
   function makeDraggable(handleEl, cardEl) {
@@ -258,7 +308,21 @@
     if (status) status.textContent = statusText;
   }
 
-  function showError(errorText, errorTitle) {
+  function buildErrorTips(errorCode) {
+    var code = (errorCode || "").toUpperCase();
+    if (/IMG_LOAD_FAIL|IMG_LOAD_TIMEOUT|IMG_COMPRESS_FAIL|IMG_TOO_LARGE|IMG_SCREENSHOT_FAIL/.test(code)) {
+      return "可能原因：网站防盗链 · 图片跨域限制 · 懒加载未就绪";
+    }
+    if (code === "CORS_BLOCKED") {
+      return "请确认 API 支持浏览器跨域请求，或改用兼容网关";
+    }
+    if (code === "MODEL_NO_VISION") {
+      return "请在设置页选择支持视觉输入的模型";
+    }
+    return "";
+  }
+
+  function showError(errorText, errorTitle, errorCode) {
     var host = ensureHost();
     var root = host.shadowRoot.getElementById(OVERLAY_ID);
     root.innerHTML = "";
@@ -277,11 +341,33 @@
     var desc = ce("div", "ip-panel-desc", errorText);
     card.appendChild(desc);
 
+    var tips = buildErrorTips(errorCode);
+    if (tips) {
+      var tipsEl = ce("div", "ip-panel-desc ip-error-tips", tips);
+      tipsEl.style.cssText = "font-size:12px;color:#888;margin-top:8px;padding:8px;background:rgba(0,0,0,0.05);border-radius:4px;";
+      card.appendChild(tipsEl);
+    }
+
+    var btnRow = ce("div", "ip-error-btn-row");
+    btnRow.style.cssText = "display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;";
+
     var retryBtn = ce("button", "ip-btn ip-btn-outline", "重新分析");
     retryBtn.addEventListener("click", function () {
       if (currentImgSrc) processImage(currentImgSrc);
     });
-    card.appendChild(retryBtn);
+    btnRow.appendChild(retryBtn);
+
+    var code = (errorCode || "").toUpperCase();
+    var showSettingsBtn = /IMG_|CORS_|MODEL_|API_|QUOTA_|RATE_|TIMEOUT|NETWORK/.test(code);
+    if (showSettingsBtn) {
+      var settingsBtn = ce("button", "ip-btn ip-btn-outline", "打开设置");
+      settingsBtn.addEventListener("click", function () {
+        chrome.runtime.sendMessage({ type: "imgprompter-open-popup" });
+      });
+      btnRow.appendChild(settingsBtn);
+    }
+
+    card.appendChild(btnRow);
 
     root.appendChild(card);
     makeDraggable(dragHead, card);
@@ -1275,7 +1361,7 @@
   }
 
   function compressDataUrlForAnalyze(dataUrl) {
-    return ImgPrompterImgProc.compressFromDataUrl(dataUrl).then(function (result) {
+    return ImgPrompterImgProc.compressFromDataUrl(dataUrl, null, { imageQualityMode: cachedQualityMode }).then(function (result) {
       return result.base64;
     });
   }
@@ -1286,7 +1372,7 @@
     }
 
     if (domImg) {
-      return ImgPrompterImgProc.captureDataUrlFromElement(domImg)
+      return ImgPrompterImgProc.captureDataUrlFromElement(domImg, { imageQualityMode: cachedQualityMode })
         .catch(function () {
           if (/^https?:\/\//i.test(imgSrc)) {
             return ImgPrompterImgProc.fetchImageBlobFromPage(imgSrc);
@@ -1330,12 +1416,12 @@
       }
       chrome.runtime.sendMessage(msg, function (resp) {
         if (chrome.runtime.lastError) {
-          showError(mapImageError("NETWORK"), "分析失败");
+          showError(mapImageError("NETWORK"), "分析失败", "NETWORK");
           return;
         }
         if (resp && resp.ok) return;
         if (resp && resp.code) {
-          showError(ImgPrompterErr.msg(resp.code), "分析失败");
+          showError(ImgPrompterErr.msg(resp.code), "分析失败", resp.code);
         }
       });
     }
@@ -1387,7 +1473,14 @@
     }
 
     if (msg.type === "imgprompter-start") {
+      cachedQualityMode = msg.imageQualityMode || "standard";
       processImage(msg.src, msg.pageUrl);
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (msg.type === "imgprompter-open-history-record") {
+      openHistoryRecord(msg.record);
       sendResponse({ ok: true });
       return;
     }
@@ -1399,7 +1492,7 @@
     }
 
     if (msg.type === "imgprompter-error") {
-      showError(msg.text, "分析失败");
+      showError(msg.text, "分析失败", msg.code);
       sendResponse({ ok: true });
       return;
     }

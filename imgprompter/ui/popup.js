@@ -36,6 +36,7 @@
   var selectLang = document.getElementById("select-lang");
   var selectFormat = document.getElementById("select-format");
   var toggleThinking = document.getElementById("toggle-thinking");
+  var selectImageQuality = document.getElementById("select-image-quality");
 
   var errApiUrl = document.getElementById("err-api-url");
   var errApiKey = document.getElementById("err-api-key");
@@ -45,10 +46,6 @@
   var btnTest = document.getElementById("btn-test");
   var btnClear = document.getElementById("btn-clear");
   var btnToggleKey = document.getElementById("btn-toggle-key");
-
-  var historyListEl = document.getElementById("history-list");
-  var historyEmptyEl = document.getElementById("history-empty");
-  var btnClearHistory = document.getElementById("btn-clear-history");
 
   var profileDrafts = {};
   var storedProfiles = {};
@@ -377,7 +374,7 @@
     tabVision.classList.toggle("visible", target === "vision");
     tabGen.classList.toggle("visible", target === "gen");
     tabHistory.classList.toggle("visible", target === "history");
-    if (target === "history") loadHistory();
+    if (target === "history" && popupHistory) popupHistory.onTabActivated();
   }
 
   var navBtns = document.querySelectorAll(".nav-btn");
@@ -594,6 +591,7 @@
       lang: selectLang.value,
       format: selectFormat.value,
       thinking: toggleThinking.checked,
+      imageQualityMode: selectImageQuality ? selectImageQuality.value : "standard",
     };
   }
 
@@ -616,6 +614,7 @@
       lang: flat.lang,
       format: flat.format,
       thinking: flat.thinking,
+      imageQualityMode: flat.imageQualityMode,
       profiles: profiles,
       genProfile: gen,
       genPlatform: gen.platform,
@@ -636,6 +635,7 @@
         lang: baseCfg.lang,
         format: baseCfg.format,
         thinking: baseCfg.thinking,
+        imageQualityMode: baseCfg.imageQualityMode || "standard",
         profiles: cloneProfiles(baseCfg.profiles || storedProfiles),
         genProfile: readGenFromForm(),
         genPlatform: readGenFromForm().platform,
@@ -656,6 +656,7 @@
         lang: current.lang,
         format: current.format,
         thinking: current.thinking,
+        imageQualityMode: current.imageQualityMode || "standard",
         profiles: cloneProfiles(current.profiles),
         genProfile: readGenFromForm(),
         genPlatform: readGenFromForm().platform,
@@ -676,6 +677,7 @@
     selectLang.value = cfg.lang || "zh";
     selectFormat.value = cfg.format || "json";
     toggleThinking.checked = !!cfg.thinking;
+    if (selectImageQuality) selectImageQuality.value = cfg.imageQualityMode || "standard";
     var activeProfile = profileDrafts[platform] || {
       apiUrl: cfg.apiUrl || "",
       apiKey: cfg.apiKey || "",
@@ -707,6 +709,7 @@
     selectLang.value = "zh";
     selectFormat.value = "json";
     toggleThinking.checked = false;
+    if (selectImageQuality) selectImageQuality.value = "standard";
     hydrateGenFields(null);
     syncVisionModelField("custom");
     clearAllFieldErrs();
@@ -827,7 +830,7 @@
     var s = (raw || "").toLowerCase();
     if (/401|unauthorized|invalid.*key|invalid.*api/i.test(s)) return ImgPrompterErr.msg("API_KEY_INVALID");
     if (/404|not found|model.*not/i.test(s)) return ImgPrompterErr.msg("MODEL_MISSING");
-    if (/429.*quota|quota.*exceeded|billing|plan/i.test(s)) return "API 配额已用尽，请检查账户余额或升级计划";
+    if (/429.*quota|quota.*exceeded|billing|plan/i.test(s)) return ImgPrompterErr.msg("QUOTA_EXCEEDED");
     if (/429|rate/i.test(s)) return "请求频率受限，请稍后重试";
     if (/cors|cross.origin|blocked/i.test(s)) return ImgPrompterErr.msg("CORS_BLOCKED");
     if (/not.json|unexpected.token|syntaxerror/i.test(s)) return ImgPrompterErr.msg("RESPONSE_NOT_JSON");
@@ -843,257 +846,12 @@
     });
   }
 
-  function loadHistory() {
-    ImgPrompterStore.getHistory(function (list) {
-      renderHistory(list);
-    });
-  }
-
-  function renderHistory(list) {
-    historyListEl.innerHTML = "";
-
-    if (!list || list.length === 0) {
-      historyEmptyEl.style.display = "block";
-      btnClearHistory.style.display = "none";
-      return;
-    }
-
-    historyEmptyEl.style.display = "none";
-    btnClearHistory.style.display = "inline-block";
-
-    list.forEach(function (record, idx) {
-      var recordFormat = record && record.format ? record.format : "json";
-      var recordLang = record && record.lang ? record.lang : "zh";
-      var isPlainFormat = recordFormat === "plain";
-      var isJsonFormat = recordFormat === "json";
-      var isDetailFormat = recordFormat === "detail";
-      var isMjFormat = recordFormat === "mj";
-      var isSdFormat = recordFormat === "sd";
-      var showPromptTab = isPlainFormat || isMjFormat || isSdFormat;
-      var showJsonTab = isJsonFormat || isDetailFormat;
-      var card = document.createElement("div");
-      card.className = "hist-card";
-
-      var topRow = document.createElement("div");
-      topRow.className = "hist-top";
-
-      if (record.imgSrc) {
-        var thumb = document.createElement("img");
-        thumb.className = "hist-thumb";
-        thumb.src = record.imgSrc;
-        thumb.alt = "缩略图";
-        thumb.addEventListener("error", function () {
-          thumb.style.display = "none";
-          var placeholder = document.createElement("div");
-          placeholder.className = "hist-thumb-placeholder";
-          placeholder.textContent = "\uD83D\uDDBC";
-          topRow.insertBefore(placeholder, topRow.firstChild);
-        });
-        topRow.appendChild(thumb);
-      } else {
-        var placeholder = document.createElement("div");
-        placeholder.className = "hist-thumb-placeholder";
-        placeholder.textContent = "\uD83D\uDDBC";
-        topRow.insertBefore(placeholder, topRow.firstChild);
-      }
-
-      var info = document.createElement("div");
-      info.className = "hist-info";
-
-      var briefEl = document.createElement("div");
-      briefEl.className = "hist-brief";
-      briefEl.textContent = record.brief || "（无描述）";
-      info.appendChild(briefEl);
-
-      var timeEl = document.createElement("div");
-      timeEl.className = "hist-time";
-      timeEl.textContent = formatTime(record.time) + " · " + recordFormat.toUpperCase();
-      info.appendChild(timeEl);
-
-      topRow.appendChild(info);
-      card.appendChild(topRow);
-
-      var promptsRow = document.createElement("div");
-      promptsRow.className = "hist-prompts";
-
-      if ((isJsonFormat || isDetailFormat) && (record.prompt_zh || record.prompt_en)) {
-        showPromptTab = true;
-      }
-
-      if (showPromptTab) {
-        if ((recordLang === "zh" || recordLang === "both" || !recordLang) && record.prompt_zh) {
-          var zhBlock = document.createElement("div");
-          zhBlock.className = "hist-prompt-block";
-          var zhLabel = document.createElement("div");
-          zhLabel.className = "hist-prompt-label";
-          zhLabel.textContent = "中文";
-          zhBlock.appendChild(zhLabel);
-          var zhText = document.createElement("div");
-          zhText.className = "hist-prompt-text";
-          zhText.textContent = truncate(record.prompt_zh, 120);
-          zhBlock.appendChild(zhText);
-          var zhCopy = document.createElement("button");
-          zhCopy.className = "btn btn-outline btn-xs";
-          zhCopy.textContent = "复制";
-          zhCopy.addEventListener("click", function () {
-            copyToClipboard(record.prompt_zh);
-          });
-          zhBlock.appendChild(zhCopy);
-          promptsRow.appendChild(zhBlock);
-        }
-
-        if ((recordLang === "en" || recordLang === "both") && record.prompt_en) {
-          var enBlock = document.createElement("div");
-          enBlock.className = "hist-prompt-block";
-          var enLabel = document.createElement("div");
-          enLabel.className = "hist-prompt-label";
-          enLabel.textContent = "英文";
-          enBlock.appendChild(enLabel);
-          var enText = document.createElement("div");
-          enText.className = "hist-prompt-text";
-          enText.textContent = truncate(record.prompt_en, 120);
-          enBlock.appendChild(enText);
-          var enCopy = document.createElement("button");
-          enCopy.className = "btn btn-outline btn-xs";
-          enCopy.textContent = "复制";
-          enCopy.addEventListener("click", function () {
-            copyToClipboard(record.prompt_en);
-          });
-          enBlock.appendChild(enCopy);
-          promptsRow.appendChild(enBlock);
-        }
-
-        if (isMjFormat && record.prompt_mj) {
-          var mjBlock = document.createElement("div");
-          mjBlock.className = "hist-prompt-block";
-          var mjLabel = document.createElement("div");
-          mjLabel.className = "hist-prompt-label";
-          mjLabel.textContent = "Midjourney";
-          mjBlock.appendChild(mjLabel);
-          var mjText = document.createElement("div");
-          mjText.className = "hist-prompt-text";
-          var mjFull = record.prompt_mj || "";
-          if (record.mj_params) mjFull += " " + record.mj_params;
-          mjText.textContent = truncate(mjFull.trim(), 120);
-          mjBlock.appendChild(mjText);
-          var mjCopy = document.createElement("button");
-          mjCopy.className = "btn btn-outline btn-xs";
-          mjCopy.textContent = "复制";
-          mjCopy.addEventListener("click", function () {
-            var copyStr = record.prompt_mj || "";
-            if (record.mj_params) copyStr += " " + record.mj_params;
-            copyToClipboard(copyStr.trim());
-          });
-          mjBlock.appendChild(mjCopy);
-          promptsRow.appendChild(mjBlock);
-        }
-
-        if (isSdFormat && record.prompt_sd) {
-          var sdBlock = document.createElement("div");
-          sdBlock.className = "hist-prompt-block";
-          var sdLabel = document.createElement("div");
-          sdLabel.className = "hist-prompt-label";
-          sdLabel.textContent = "Stable Diffusion";
-          sdBlock.appendChild(sdLabel);
-          var sdText = document.createElement("div");
-          sdText.className = "hist-prompt-text";
-          sdText.textContent = truncate(record.prompt_sd, 120);
-          sdBlock.appendChild(sdText);
-          var sdCopy = document.createElement("button");
-          sdCopy.className = "btn btn-outline btn-xs";
-          sdCopy.textContent = "复制";
-          sdCopy.addEventListener("click", function () {
-            copyToClipboard(record.prompt_sd);
-          });
-          sdBlock.appendChild(sdCopy);
-          promptsRow.appendChild(sdBlock);
-
-          if (record.sd_negative) {
-            var negBlock = document.createElement("div");
-            negBlock.className = "hist-prompt-block";
-            var negLabel = document.createElement("div");
-            negLabel.className = "hist-prompt-label";
-            negLabel.textContent = "Negative";
-            negBlock.appendChild(negLabel);
-            var negText = document.createElement("div");
-            negText.className = "hist-prompt-text";
-            negText.textContent = truncate(record.sd_negative, 120);
-            negBlock.appendChild(negText);
-            var negCopy = document.createElement("button");
-            negCopy.className = "btn btn-outline btn-xs";
-            negCopy.textContent = "复制";
-            negCopy.addEventListener("click", function () {
-              copyToClipboard(record.sd_negative);
-            });
-            negBlock.appendChild(negCopy);
-            promptsRow.appendChild(negBlock);
-          }
-        }
-      }
-
-      if (showJsonTab && record.json) {
-        var jsonPreview = document.createElement("div");
-        jsonPreview.className = "hist-prompt-block";
-        var jsonLabel = document.createElement("div");
-        jsonLabel.className = "hist-prompt-label";
-        jsonLabel.textContent = isDetailFormat ? "详细 JSON" : "JSON";
-        jsonPreview.appendChild(jsonLabel);
-        var jsonText = document.createElement("div");
-        jsonText.className = "hist-prompt-text";
-        jsonText.textContent = truncate(JSON.stringify(record.json), 140);
-        jsonPreview.appendChild(jsonText);
-        var jsonCopy = document.createElement("button");
-        jsonCopy.className = "btn btn-outline btn-xs";
-        jsonCopy.textContent = "复制 JSON";
-        jsonCopy.addEventListener("click", function () {
-          copyToClipboard(JSON.stringify(record.json, null, 2));
-        });
-        jsonPreview.appendChild(jsonCopy);
-        promptsRow.appendChild(jsonPreview);
-      }
-
-      card.appendChild(promptsRow);
-      historyListEl.appendChild(card);
-    });
-  }
-
-  btnClearHistory.addEventListener("click", function () {
-    chrome.runtime.sendMessage({ type: "imgprompter-clear-history" }, function (resp) {
-      if (chrome.runtime.lastError || !resp || !resp.ok) return;
-      loadHistory();
-    });
+  var popupHistory = new ImgPrompterPopupHistory({
+    listEl: document.getElementById("history-list"),
+    emptyEl: document.getElementById("history-empty"),
+    clearBtnEl: document.getElementById("btn-clear-history"),
+    msgEl: document.getElementById("settings-msg"),
   });
-
-  function formatTime(iso) {
-    if (!iso) return "";
-    var d = new Date(iso);
-    var m = d.getMonth() + 1;
-    var day = d.getDate();
-    var h = d.getHours();
-    var min = d.getMinutes();
-    return m + "/" + day + " " + (h < 10 ? "0" : "") + h + ":" + (min < 10 ? "0" : "") + min;
-  }
-
-  function truncate(s, max) {
-    if (!s) return "";
-    if (s.length <= max) return s;
-    return s.substring(0, max) + "...";
-  }
-
-  function copyToClipboard(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text);
-    } else {
-      var ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.left = "-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-    }
-  }
 
   selectPlatform.setAttribute("data-prev-platform", selectPlatform.value);
 

@@ -6,6 +6,21 @@ var ImgPrompterImgProc = (function () {
   var JPEG_QUALITY = 0.72;
   var IMG_LOAD_TIMEOUT_MS = 15000;
 
+  var QUALITY_MODES = {
+    fast: { maxEdge: 512, jpegQuality: 0.72 },
+    standard: { maxEdge: 768, jpegQuality: 0.78 },
+    high: { maxEdge: 1024, jpegQuality: 0.82 },
+  };
+
+  function resolveQualityOpts(opts) {
+    var mode = (opts && opts.imageQualityMode) || "standard";
+    var preset = QUALITY_MODES[mode] || QUALITY_MODES.standard;
+    return {
+      maxEdge: (opts && opts.maxEdge) || preset.maxEdge,
+      jpegQuality: (opts && opts.jpegQuality) || preset.jpegQuality,
+    };
+  }
+
   function estimateDataUrlBytes(dataUrl) {
     var commaIdx = dataUrl.indexOf(",");
     if (commaIdx === -1) return 0;
@@ -93,8 +108,11 @@ var ImgPrompterImgProc = (function () {
     });
   }
 
-  function resizeBlobToDataUrl(blob, originalWidth, originalHeight) {
-    var scale = MAX_EDGE / Math.max(originalWidth, originalHeight);
+  function resizeBlobToDataUrl(blob, originalWidth, originalHeight, opts) {
+    var q = resolveQualityOpts(opts);
+    var maxEdge = q.maxEdge;
+    var jpegQuality = q.jpegQuality;
+    var scale = maxEdge / Math.max(originalWidth, originalHeight);
     var nw = Math.round(originalWidth * scale);
     var nh = Math.round(originalHeight * scale);
     return createImageBitmap(blob, {
@@ -110,7 +128,7 @@ var ImgPrompterImgProc = (function () {
       }
       ctx.drawImage(resized, 0, 0);
       if (resized.close) resized.close();
-      return canvas.convertToBlob({ type: "image/jpeg", quality: JPEG_QUALITY }).then(function (outBlob) {
+      return canvas.convertToBlob({ type: "image/jpeg", quality: jpegQuality }).then(function (outBlob) {
         return blobToDataUrl(outBlob).then(function (dataUrl) {
           return packResult(dataUrl, originalWidth, originalHeight, blob.size, nw, nh, estimateDataUrlBytes(dataUrl));
         });
@@ -118,13 +136,16 @@ var ImgPrompterImgProc = (function () {
     });
   }
 
-  function compressFromArrayBuffer(buffer, contentType, perfSession) {
+  function compressFromArrayBuffer(buffer, contentType, perfSession, opts) {
     if (!buffer || buffer.byteLength > MAX_ORIGINAL_BYTES) {
       return Promise.reject(new Error("IMG_TOO_LARGE"));
     }
     if (typeof createImageBitmap === "undefined") {
       return Promise.reject(new Error("IMG_COMPRESS_FAIL"));
     }
+
+    var q = resolveQualityOpts(opts);
+    var maxEdge = q.maxEdge;
 
     var blob = new Blob([buffer], { type: contentType || "image/jpeg" });
     return inspectBlobBitmap(blob).then(function (size) {
@@ -136,7 +157,7 @@ var ImgPrompterImgProc = (function () {
       if (size.width <= 0 || size.height <= 0) {
         throw new Error("IMG_LOAD_FAIL");
       }
-      if (size.width <= MAX_EDGE && size.height <= MAX_EDGE) {
+      if (size.width <= maxEdge && size.height <= maxEdge) {
         return blobToDataUrl(blob).then(function (dataUrl) {
           logPerf(perfSession, "image_compress", {
             skipped: true,
@@ -146,7 +167,7 @@ var ImgPrompterImgProc = (function () {
           return packResult(dataUrl, size.width, size.height, buffer.byteLength);
         });
       }
-      return resizeBlobToDataUrl(blob, size.width, size.height).then(function (result) {
+      return resizeBlobToDataUrl(blob, size.width, size.height, opts).then(function (result) {
         logPerf(perfSession, "image_compress", {
           skipped: false,
           width: result.compressedWidth,
@@ -178,11 +199,15 @@ var ImgPrompterImgProc = (function () {
     return bytes.buffer;
   }
 
-  function compressFromDataUrl(dataUrl, perfSession) {
+  function compressFromDataUrl(dataUrl, perfSession, opts) {
     var estBytes = estimateDataUrlBytes(dataUrl);
     if (estBytes > MAX_ORIGINAL_BYTES) {
       return Promise.reject(new Error("IMG_TOO_LARGE"));
     }
+
+    var q = resolveQualityOpts(opts);
+    var maxEdge = q.maxEdge;
+    var jpegQuality = q.jpegQuality;
 
     if (typeof createImageBitmap !== "undefined" && typeof OffscreenCanvas !== "undefined") {
       var meta = parseDataUrlMeta(dataUrl);
@@ -197,7 +222,7 @@ var ImgPrompterImgProc = (function () {
           if (size.width <= 0 || size.height <= 0) {
             throw new Error("IMG_LOAD_FAIL");
           }
-          if (size.width <= MAX_EDGE && size.height <= MAX_EDGE) {
+          if (size.width <= maxEdge && size.height <= maxEdge) {
             logPerf(perfSession, "image_compress", {
               skipped: true,
               width: size.width,
@@ -205,7 +230,7 @@ var ImgPrompterImgProc = (function () {
             });
             return packResult(dataUrl, size.width, size.height, estBytes);
           }
-          return resizeBlobToDataUrl(blob, size.width, size.height).then(function (result) {
+          return resizeBlobToDataUrl(blob, size.width, size.height, opts).then(function (result) {
             logPerf(perfSession, "image_compress", {
               skipped: false,
               width: result.compressedWidth,
@@ -227,7 +252,7 @@ var ImgPrompterImgProc = (function () {
         bytes: estBytes,
       });
       if (w === 0 || h === 0) throw new Error("IMG_LOAD_FAIL");
-      if (w <= MAX_EDGE && h <= MAX_EDGE) {
+      if (w <= maxEdge && h <= maxEdge) {
         logPerf(perfSession, "image_compress", {
           skipped: true,
           width: w,
@@ -236,7 +261,7 @@ var ImgPrompterImgProc = (function () {
         return packResult(dataUrl, w, h, estBytes);
       }
 
-      var scale = MAX_EDGE / Math.max(w, h);
+      var scale = maxEdge / Math.max(w, h);
       var nw = Math.round(w * scale);
       var nh = Math.round(h * scale);
       var canvas = document.createElement("canvas");
@@ -244,7 +269,7 @@ var ImgPrompterImgProc = (function () {
       canvas.height = nh;
       var ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0, nw, nh);
-      var compressedDataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+      var compressedDataUrl = canvas.toDataURL("image/jpeg", jpegQuality);
       var compressedBytes = estimateDataUrlBytes(compressedDataUrl);
       logPerf(perfSession, "image_compress", {
         skipped: false,
@@ -278,7 +303,7 @@ var ImgPrompterImgProc = (function () {
     };
   }
 
-  function captureDataUrlFromElement(imageEl) {
+  function captureDataUrlFromElement(imageEl, opts) {
     if (!imageEl || imageEl.tagName !== "IMG") {
       return Promise.reject(new Error("IMG_LOAD_FAIL"));
     }
@@ -292,6 +317,10 @@ var ImgPrompterImgProc = (function () {
       return Promise.reject(new Error("IMG_LOAD_FAIL"));
     }
 
+    var q = resolveQualityOpts(opts);
+    var maxEdge = q.maxEdge;
+    var jpegQuality = q.jpegQuality;
+
     var width = imageEl.naturalWidth || imageEl.width;
     var height = imageEl.naturalHeight || imageEl.height;
     if (width <= 0 || height <= 0) {
@@ -299,8 +328,8 @@ var ImgPrompterImgProc = (function () {
     }
 
     var scale = 1;
-    if (width > MAX_EDGE || height > MAX_EDGE) {
-      scale = MAX_EDGE / Math.max(width, height);
+    if (width > maxEdge || height > maxEdge) {
+      scale = maxEdge / Math.max(width, height);
     }
     var cw = Math.max(1, Math.round(width * scale));
     var ch = Math.max(1, Math.round(height * scale));
@@ -312,7 +341,7 @@ var ImgPrompterImgProc = (function () {
         return Promise.reject(new Error("IMG_LOAD_FAIL"));
       }
       ctx.drawImage(imageEl, 0, 0, cw, ch);
-      return canvas.convertToBlob({ type: "image/jpeg", quality: JPEG_QUALITY }).then(function (blob) {
+      return canvas.convertToBlob({ type: "image/jpeg", quality: jpegQuality }).then(function (blob) {
         return blobToDataUrl(blob);
       });
     } catch (e) {
@@ -335,6 +364,7 @@ var ImgPrompterImgProc = (function () {
   return {
     MAX_ORIGINAL_BYTES: MAX_ORIGINAL_BYTES,
     MAX_EDGE: MAX_EDGE,
+    QUALITY_MODES: QUALITY_MODES,
     estimateDataUrlBytes: estimateDataUrlBytes,
     loadImage: loadImage,
     compressFromArrayBuffer: compressFromArrayBuffer,

@@ -22,6 +22,7 @@
 
 - 内置候选模型仅作为快捷选择，实际可用性取决于你的账号、地区、套餐和 API 权限。
 - 即使选择了内置平台，仍然可以手动输入自定义模型名称。
+- 维护者更新候选：编辑 `imgprompter/core/model_presets.js`（详细步骤见 [docs/model-config.md](./docs/model-config.md)）。
 
 ## 内置模型候选
 
@@ -80,6 +81,7 @@ imgprompter/
     bg.js
     err.js
     imgproc.js
+    model_presets.js
     net.js
     parse.js
     perf.js

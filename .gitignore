@@ -16,3 +16,10 @@ imgprompter-*.zip
 coverage/
 tmp/
 temp/
+
+# Project planning / docs (not for repo)
+imgprompter/image-to-prompt-optimization-pack/
+imgprompter/项目管理/
+imgprompter/docs/
+AGENTS.md
+.cursor/

@@ -1,4 +1,4 @@
-importScripts("store.js", "err.js", "prompts.js", "parse.js", "perf.js", "imgproc.js", "net.js");
+importScripts("model_presets.js", "store.js", "err.js", "prompts.js", "parse.js", "perf.js", "imgproc.js", "net.js");
 
 (function () {
   "use strict";
@@ -44,6 +44,7 @@ importScripts("store.js", "err.js", "prompts.js", "parse.js", "perf.js", "imgpro
         type: "imgprompter-start",
         src: imgSrc,
         pageUrl: info.pageUrl || (tab && tab.url) || "",
+        imageQualityMode: cfg.imageQualityMode || "standard",
       });
     });
   });
@@ -60,6 +61,14 @@ importScripts("store.js", "err.js", "prompts.js", "parse.js", "perf.js", "imgpro
         });
       }
     });
+  }
+
+  function isInjectableUrl(url) {
+    if (!url) return false;
+    if (/^(chrome|edge|about|moz-extension|chrome-extension|devtools|view-source):/i.test(url)) return false;
+    if (/^https?:\/\//i.test(url)) return true;
+    if (/^file:/i.test(url)) return true;
+    return false;
   }
 
   function arrayBufferToBase64(buffer) {
@@ -83,6 +92,10 @@ importScripts("store.js", "err.js", "prompts.js", "parse.js", "perf.js", "imgpro
 
   function sendProgress(tabId, text, pct) {
     chrome.tabs.sendMessage(tabId, { type: "imgprompter-progress", text: text, pct: pct });
+  }
+
+  function buildQualityOpts(cfg) {
+    return { imageQualityMode: cfg.imageQualityMode || "standard" };
   }
 
   function getMissingVisionConfigCode(cfg) {
@@ -241,7 +254,7 @@ importScripts("store.js", "err.js", "prompts.js", "parse.js", "perf.js", "imgpro
   }
 
   function buildAnalyzeCacheKey(imgSrc, cfg) {
-    return String(imgSrc || "") + "|" + String(cfg.lang || "zh") + "|" + String(cfg.format || "json") + "|" + String(cfg.model || "") + "|" + String(cfg.apiUrl || "") + "|thinking:" + (cfg.thinking ? "1" : "0");
+    return String(imgSrc || "") + "|" + String(cfg.lang || "zh") + "|" + String(cfg.format || "json") + "|" + String(cfg.model || "") + "|" + String(cfg.apiUrl || "") + "|thinking:" + (cfg.thinking ? "1" : "0") + "|quality:" + (cfg.imageQualityMode || "standard");
   }
 
   function deliverCachedAnalyze(tabId, cached, cfg) {
@@ -264,7 +277,7 @@ importScripts("store.js", "err.js", "prompts.js", "parse.js", "perf.js", "imgpro
     };
   }
 
-  function prepareImageDataUrl(tabId, imgSrc, opts, perfSession, cb) {
+  function prepareImageDataUrl(tabId, imgSrc, opts, perfSession, qualityOpts, cb) {
     if (!imgSrc) {
       cb(new Error("IMG_LOAD_FAIL"), null);
       return;
@@ -276,7 +289,7 @@ importScripts("store.js", "err.js", "prompts.js", "parse.js", "perf.js", "imgpro
 
     if (/^data:image/i.test(imgSrc)) {
       sendProgress(tabId, "正在压缩图片...", 30);
-      ImgPrompterImgProc.compressFromDataUrl(imgSrc, perfSession).then(function (result) {
+      ImgPrompterImgProc.compressFromDataUrl(imgSrc, perfSession, qualityOpts).then(function (result) {
         cb(null, result.base64);
       }).catch(function (err) {
         cb(err, null);
@@ -294,7 +307,7 @@ importScripts("store.js", "err.js", "prompts.js", "parse.js", "perf.js", "imgpro
               return;
             }
             sendProgress(tabId, "正在压缩图片...", 30);
-            ImgPrompterImgProc.compressFromDataUrl(cropDataUrl, perfSession).then(function (result) {
+            ImgPrompterImgProc.compressFromDataUrl(cropDataUrl, perfSession, qualityOpts).then(function (result) {
               cb(null, result.base64);
             }).catch(function (compressErr) {
               cb(compressErr, null);
@@ -306,7 +319,7 @@ importScripts("store.js", "err.js", "prompts.js", "parse.js", "perf.js", "imgpro
         return;
       }
       sendProgress(tabId, "正在压缩图片...", 30);
-      ImgPrompterImgProc.compressFromArrayBuffer(buffer, contentType, perfSession).then(function (result) {
+      ImgPrompterImgProc.compressFromArrayBuffer(buffer, contentType, perfSession, qualityOpts).then(function (result) {
         cb(null, result.base64);
       }).catch(function (compressErr) {
         cb(compressErr, null);
@@ -491,6 +504,7 @@ importScripts("store.js", "err.js", "prompts.js", "parse.js", "perf.js", "imgpro
           lang: cfg.lang || "",
           model: cfg.model || "",
           provider: ImgPrompterNet.detectProvider(cfg.apiUrl || ""),
+          imageQualityMode: cfg.imageQualityMode || "standard",
         });
 
         var cacheImgSrc = msg.imgSrc || "";
@@ -510,7 +524,7 @@ importScripts("store.js", "err.js", "prompts.js", "parse.js", "perf.js", "imgpro
             return;
           }
           sendProgress(senderTabId, "正在压缩图片...", 40);
-          ImgPrompterImgProc.compressFromDataUrl(imageDataUrl, perfSession).then(function (compressed) {
+          ImgPrompterImgProc.compressFromDataUrl(imageDataUrl, perfSession, buildQualityOpts(cfg)).then(function (compressed) {
             sendProgress(senderTabId, "正在调用 AI 分析...", 50);
             doAnalyze(senderTabId, cfg, compressed.base64, cacheImgSrc, perfSession);
           }).catch(function (compressErr) {
@@ -530,7 +544,7 @@ importScripts("store.js", "err.js", "prompts.js", "parse.js", "perf.js", "imgpro
             screenshotCrop: msg.screenshotCrop,
             windowId: sender.tab ? sender.tab.windowId : null,
           };
-          prepareImageDataUrl(senderTabId, msg.imgSrc, prepOpts, perfSession, function (prepErr, dataUrl) {
+          prepareImageDataUrl(senderTabId, msg.imgSrc, prepOpts, perfSession, buildQualityOpts(cfg), function (prepErr, dataUrl) {
             if (prepErr) {
               var prepCode = prepErr.message || "IMG_LOAD_FAIL";
               ImgPrompterPerf.logTotal(perfSession, "analyze_total", { code: prepCode });
@@ -591,6 +605,48 @@ importScripts("store.js", "err.js", "prompts.js", "parse.js", "perf.js", "imgpro
           })
         );
         sendResponse({ ok: true, accepted: true });
+      });
+      return true;
+    }
+
+    if (msg.type === "imgprompter-show-history-record") {
+      if (!msg.record) {
+        sendResponse({ ok: false, code: "RECORD_EMPTY" });
+        return true;
+      }
+      chrome.tabs.query({ active: true, lastFocusedWindow: true }, function (tabs) {
+        var tab = tabs && tabs[0];
+        if (!tab || !tab.id) {
+          sendResponse({ ok: false, code: "INJECT_BLOCKED" });
+          return;
+        }
+        if (!isInjectableUrl(tab.url || "")) {
+          sendResponse({ ok: false, code: "INJECT_BLOCKED" });
+          return;
+        }
+        sendToTab(tab.id, { type: "imgprompter-open-history-record", record: msg.record });
+        sendResponse({ ok: true });
+      });
+      return true;
+    }
+
+    if (msg.type === "imgprompter-reanalyze-history-record") {
+      if (!msg.record || !msg.record.imgSrc) {
+        sendResponse({ ok: false, code: "IMG_SRC_EMPTY" });
+        return true;
+      }
+      chrome.tabs.query({ active: true, lastFocusedWindow: true }, function (tabs) {
+        var tab = tabs && tabs[0];
+        if (!tab || !tab.id || !isInjectableUrl(tab.url || "")) {
+          sendResponse({ ok: false, code: "INJECT_BLOCKED" });
+          return;
+        }
+        sendToTab(tab.id, {
+          type: "imgprompter-start",
+          src: msg.record.imgSrc,
+          pageUrl: msg.record.pageUrl || tab.url || "",
+        });
+        sendResponse({ ok: true });
       });
       return true;
     }
