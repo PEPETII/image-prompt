@@ -108,7 +108,7 @@ var ImgPrompterStore = (function () {
   function cloneGenProfile(genProfile) {
     var src = genProfile || emptyGenProfile();
     return {
-      platform: src.platform && isKnownPlatform(src.platform) ? src.platform : "custom",
+      platform: src.platform && isKnownGenPlatform(src.platform) ? src.platform : "custom",
       apiUrl: src.apiUrl ? String(src.apiUrl) : "",
       apiKey: src.apiKey ? String(src.apiKey) : "",
       model: src.model ? String(src.model) : "",
@@ -275,7 +275,7 @@ var ImgPrompterStore = (function () {
       }
       urlProvider = modelProvider;
     } else if (modelProvider && urlProvider === "custom" && DEFAULT_API_URLS[modelProvider]) {
-      if (!next.apiUrl || inferPlatformFromUrl(next.apiUrl) === "custom") {
+      if (!next.apiUrl) {
         next.apiUrl = DEFAULT_API_URLS[modelProvider];
         dirty = true;
         urlProvider = modelProvider;

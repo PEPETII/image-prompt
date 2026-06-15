@@ -231,20 +231,20 @@ var ImgPrompterPopupHistory = (function () {
         function (resp) {
           btn.disabled = false;
           if (chrome.runtime.lastError) {
-            self._showActionMsg(ImgPrompterErr.msg("INJECT_BLOCKED"));
+            self._showActionMsg(ImgPrompterErr.msg("INJECT_BLOCKED"), false);
             return;
           }
           if (!resp || !resp.ok) {
             if (resp && resp.code === "INJECT_BLOCKED") {
-              self._showActionMsg(ImgPrompterErr.msg("INJECT_BLOCKED"));
+              self._showActionMsg(ImgPrompterErr.msg("INJECT_BLOCKED"), false);
             } else if (resp && resp.code === "RECORD_EMPTY") {
-              self._showActionMsg(ImgPrompterErr.msg("RECORD_EMPTY"));
+              self._showActionMsg(ImgPrompterErr.msg("RECORD_EMPTY"), false);
             } else {
-              self._showActionMsg("打开失败，请稍后重试");
+              self._showActionMsg("打开失败，请稍后重试", false);
             }
             return;
           }
-          self._showActionMsg("已在当前页面打开历史结果");
+          self._showActionMsg("已在当前页面打开历史结果", true);
         }
       );
     };
@@ -259,29 +259,29 @@ var ImgPrompterPopupHistory = (function () {
         function (resp) {
           btn.disabled = false;
           if (chrome.runtime.lastError) {
-            self._showActionMsg("重新分析请求失败，请稍后重试");
+            self._showActionMsg("重新分析请求失败，请稍后重试", false);
             return;
           }
           if (!resp || !resp.ok) {
             if (resp && resp.code === "INJECT_BLOCKED") {
-              self._showActionMsg(ImgPrompterErr.msg("INJECT_BLOCKED"));
+              self._showActionMsg(ImgPrompterErr.msg("INJECT_BLOCKED"), false);
             } else if (resp && resp.code === "IMG_SRC_EMPTY") {
-              self._showActionMsg(ImgPrompterErr.msg("IMG_SRC_EMPTY"));
+              self._showActionMsg(ImgPrompterErr.msg("IMG_SRC_EMPTY"), false);
             } else {
-              self._showActionMsg("重新分析失败，请稍后重试");
+              self._showActionMsg("重新分析失败，请稍后重试", false);
             }
             return;
           }
-          self._showActionMsg("已在当前页面重新分析");
+          self._showActionMsg("已在当前页面重新分析", true);
         }
       );
     };
   };
 
-  PopupHistory.prototype._showActionMsg = function (text) {
+  PopupHistory.prototype._showActionMsg = function (text, ok) {
     if (!this.msgEl) return;
     this.msgEl.textContent = text;
-    this.msgEl.className = "form-msg ok";
+    this.msgEl.className = "form-msg " + (ok === false ? "err" : "ok");
     if (this._msgTimer) clearTimeout(this._msgTimer);
     var el = this.msgEl;
     this._msgTimer = setTimeout(function () {
