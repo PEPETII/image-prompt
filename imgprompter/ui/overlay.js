@@ -1446,6 +1446,30 @@
     });
   }
 
+  function processLocalImage(imageDataUrl) {
+    currentImgSrc = imageDataUrl || "";
+    currentPageUrl = location.href;
+    currentJson = null;
+    currentRaw = "";
+    activeTab = "tab-prompt";
+
+    showProgress(currentImgSrc, "正在准备本地图片...");
+
+    chrome.runtime.sendMessage({
+      type: "imgprompter-analyze",
+      imageDataUrl: imageDataUrl,
+    }, function (resp) {
+      if (chrome.runtime.lastError) {
+        showError(mapImageError("NETWORK"), "分析失败", "NETWORK");
+        return;
+      }
+      if (resp && resp.ok) return;
+      if (resp && resp.code) {
+        showError(ImgPrompterErr.msg(resp.code), "分析失败", resp.code);
+      }
+    });
+  }
+
   document.addEventListener("contextmenu", function (e) {
     if (e.target && e.target.tagName === "IMG") {
       lastContextImage = e.target;
@@ -1475,6 +1499,13 @@
     if (msg.type === "imgprompter-start") {
       cachedQualityMode = msg.imageQualityMode || "standard";
       processImage(msg.src, msg.pageUrl);
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (msg.type === "imgprompter-start-local-upload") {
+      cachedQualityMode = msg.imageQualityMode || "standard";
+      processLocalImage(msg.imageDataUrl || "");
       sendResponse({ ok: true });
       return;
     }

@@ -37,10 +37,20 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+body.ip-page-options {
+  width: auto;
+  min-height: 100vh;
+}
+
 .app {
   display: flex;
   flex-direction: column;
   height: 100%;
+}
+
+body.ip-page-options .app {
+  max-width: 760px;
+  margin: 0 auto;
 }
 
 .app-header {
@@ -223,6 +233,20 @@ body {
   display: flex;
   gap: 8px;
   margin-top: 18px;
+}
+
+.form-actions-inline {
+  margin-top: 8px;
+  align-items: center;
+}
+
+.inline-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .btn {
