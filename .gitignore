@@ -16,6 +16,8 @@ imgprompter-*.zip
 coverage/
 tmp/
 temp/
+.tmp-playwright-*/
+.tmp-playwright-*.png
 
 # Project planning / docs (not for repo)
 imgprompter/image-to-prompt-optimization-pack/
