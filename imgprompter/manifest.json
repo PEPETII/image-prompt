@@ -20,6 +20,10 @@
     },
     "default_title": "__MSG_extensionName__"
   },
+  "options_ui": {
+    "page": "ui/popup.html",
+    "open_in_tab": true
+  },
   "background": {
     "service_worker": "core/bg.js"
   },

@@ -1,6 +1,18 @@
 (function () {
   "use strict";
 
+  if (chrome.tabs && chrome.tabs.getCurrent) {
+    chrome.tabs.getCurrent(function (tab) {
+      if (tab && tab.id) {
+        document.body.classList.add("ip-page-options");
+      } else if (window.innerWidth > 500) {
+        document.body.classList.add("ip-page-options");
+      }
+    });
+  } else if (window.innerWidth > 500) {
+    document.body.classList.add("ip-page-options");
+  }
+
   var tabVision = document.getElementById("tab-vision");
   var tabGen = document.getElementById("tab-gen");
   var tabHistory = document.getElementById("tab-history");
@@ -37,6 +49,9 @@
   var selectFormat = document.getElementById("select-format");
   var toggleThinking = document.getElementById("toggle-thinking");
   var selectImageQuality = document.getElementById("select-image-quality");
+  var inputLocalImage = document.getElementById("input-local-image");
+  var btnLocalAnalyze = document.getElementById("btn-local-analyze");
+  var localImageName = document.getElementById("local-image-name");
 
   var errApiUrl = document.getElementById("err-api-url");
   var errApiKey = document.getElementById("err-api-key");
@@ -595,6 +610,96 @@
     };
   }
 
+  function getGenFormFlatConfig() {
+    var gen = readGenFromForm();
+    return {
+      genPlatform: gen.platform,
+      genApiUrl: gen.apiUrl,
+      genApiKey: gen.apiKey,
+      genModel: gen.model,
+    };
+  }
+
+  function getLocalImageFile() {
+    if (!inputLocalImage || !inputLocalImage.files || !inputLocalImage.files.length) return null;
+    return inputLocalImage.files[0] || null;
+  }
+
+  function updateLocalImageName() {
+    var file = getLocalImageFile();
+    if (!localImageName) return;
+    localImageName.textContent = file && file.name ? file.name : "未选择图片";
+  }
+
+  function readLocalImageAsDataUrl(file, cb) {
+    if (!file) {
+      cb(new Error("IMG_LOAD_FAIL"), "");
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function () {
+      cb(null, reader.result || "");
+    };
+    reader.onerror = function () {
+      cb(new Error("IMG_LOAD_FAIL"), "");
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function setLocalAnalyzeBusy(busy) {
+    if (!btnLocalAnalyze) return;
+    btnLocalAnalyze.disabled = !!busy;
+    btnLocalAnalyze.classList.toggle("loading", !!busy);
+  }
+
+  function startLocalImageAnalyze() {
+    if (!validate()) return;
+    var file = getLocalImageFile();
+    if (!file) {
+      showMsg("请先选择本地图片", false);
+      return;
+    }
+
+    setLocalAnalyzeBusy(true);
+    btnSave.disabled = true;
+    btnClear.disabled = true;
+    btnTest.disabled = true;
+    showMsg("正在读取本地图片...", true);
+
+    readLocalImageAsDataUrl(file, function (err, dataUrl) {
+      if (err || !dataUrl) {
+        setLocalAnalyzeBusy(false);
+        btnSave.disabled = false;
+        btnClear.disabled = false;
+        btnTest.disabled = false;
+        showMsg(ImgPrompterErr.msg("IMG_LOAD_FAIL"), false);
+        return;
+      }
+
+      chrome.runtime.sendMessage({
+        type: "imgprompter-open-local-upload",
+        imageDataUrl: dataUrl,
+        fileName: file.name || "",
+      }, function (resp) {
+        setLocalAnalyzeBusy(false);
+        btnSave.disabled = false;
+        btnClear.disabled = false;
+        btnTest.disabled = false;
+
+        if (chrome.runtime.lastError) {
+          showMsg("发送本地图片失败，请稍后重试", false);
+          return;
+        }
+        if (!resp || !resp.ok) {
+          if (resp && resp.code) showMsg(ImgPrompterErr.msg(resp.code), false);
+          else showMsg("打开分析面板失败，请稍后重试", false);
+          return;
+        }
+        showMsg("已在当前页面打开本地图片分析", true);
+      });
+    });
+  }
+
   function buildSaveConfig() {
     var platform = selectPlatform.value;
     updateDraftFromForm(platform);
@@ -800,7 +905,7 @@
 
   btnGenTest.addEventListener("click", function () {
     if (!validateGen()) return;
-    var cfg = getFormFlatConfig();
+    var cfg = getGenFormFlatConfig();
 
     btnGenTest.classList.add("loading");
     btnGenTest.disabled = true;
@@ -846,6 +951,17 @@
     });
   }
 
+  if (inputLocalImage) {
+    inputLocalImage.addEventListener("change", function () {
+      updateLocalImageName();
+      clearMsg();
+    });
+  }
+
+  if (btnLocalAnalyze) {
+    btnLocalAnalyze.addEventListener("click", startLocalImageAnalyze);
+  }
+
   var popupHistory = new ImgPrompterPopupHistory({
     listEl: document.getElementById("history-list"),
     emptyEl: document.getElementById("history-empty"),
@@ -862,5 +978,6 @@
   }
 
   loadConfig();
+  updateLocalImageName();
   openTabFromHash();
 })();

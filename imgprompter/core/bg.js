@@ -63,6 +63,23 @@ importScripts("model_presets.js", "store.js", "err.js", "prompts.js", "parse.js"
     });
   }
 
+  function pickBestInjectableTab(tabs) {
+    if (!tabs || !tabs.length) return null;
+    var preferred = null;
+    var fallback = null;
+    var i;
+    for (i = 0; i < tabs.length; i++) {
+      var tab = tabs[i];
+      if (!tab || !tab.id || !isInjectableUrl(tab.url || "")) continue;
+      if (tab.active) return tab;
+      if (!preferred || (tab.lastAccessed || 0) > (preferred.lastAccessed || 0)) {
+        preferred = tab;
+      }
+      if (!fallback) fallback = tab;
+    }
+    return preferred || fallback;
+  }
+
   function isInjectableUrl(url) {
     if (!url) return false;
     if (/^(chrome|edge|about|moz-extension|chrome-extension|devtools|view-source):/i.test(url)) return false;
@@ -96,6 +113,20 @@ importScripts("model_presets.js", "store.js", "err.js", "prompts.js", "parse.js"
 
   function buildQualityOpts(cfg) {
     return { imageQualityMode: cfg.imageQualityMode || "standard" };
+  }
+
+  function normalizeImagePrepCode(err, fallbackCode) {
+    var code = err && err.message ? String(err.message) : String(fallbackCode || "IMG_LOAD_FAIL");
+    if (
+      code === "IMG_LOAD_FAIL" ||
+      code === "IMG_LOAD_TIMEOUT" ||
+      code === "IMG_COMPRESS_FAIL" ||
+      code === "IMG_TOO_LARGE" ||
+      code === "IMG_SCREENSHOT_FAIL"
+    ) {
+      return code;
+    }
+    return fallbackCode || "IMG_LOAD_FAIL";
   }
 
   function getMissingVisionConfigCode(cfg) {
@@ -482,7 +513,36 @@ importScripts("model_presets.js", "store.js", "err.js", "prompts.js", "parse.js"
       if (msg.tab === "gen") popupUrl += "#gen";
       chrome.tabs.create({ url: popupUrl });
       sendResponse({ ok: true });
-      return;
+      return true;
+    }
+
+    if (msg.type === "imgprompter-open-local-upload") {
+      if (!msg.imageDataUrl || !/^data:image\//i.test(String(msg.imageDataUrl))) {
+        sendResponse({ ok: false, code: "IMG_LOAD_FAIL" });
+        return true;
+      }
+      chrome.tabs.query({ lastFocusedWindow: true }, function (tabs) {
+        var tab = pickBestInjectableTab(tabs);
+        if (!tab || !tab.id) {
+          sendResponse({ ok: false, code: "INJECT_BLOCKED" });
+          return;
+        }
+        ImgPrompterStore.getConfig(function (cfg) {
+          var missingCode = getMissingVisionConfigCode(cfg);
+          if (missingCode) {
+            sendResponse({ ok: false, code: missingCode });
+            return;
+          }
+          sendToTab(tab.id, {
+            type: "imgprompter-start-local-upload",
+            imageDataUrl: msg.imageDataUrl,
+            fileName: msg.fileName || "",
+            imageQualityMode: cfg.imageQualityMode || "standard",
+          });
+          sendResponse({ ok: true });
+        });
+      });
+      return true;
     }
 
     if (msg.type === "imgprompter-analyze") {
@@ -528,7 +588,7 @@ importScripts("model_presets.js", "store.js", "err.js", "prompts.js", "parse.js"
             sendProgress(senderTabId, "正在调用 AI 分析...", 50);
             doAnalyze(senderTabId, cfg, compressed.base64, cacheImgSrc, perfSession);
           }).catch(function (compressErr) {
-            var prepCode = compressErr && compressErr.message ? compressErr.message : "IMG_COMPRESS_FAIL";
+            var prepCode = normalizeImagePrepCode(compressErr, "IMG_COMPRESS_FAIL");
             ImgPrompterPerf.logTotal(perfSession, "analyze_total", { code: prepCode });
             chrome.tabs.sendMessage(senderTabId, {
               type: "imgprompter-error",
@@ -546,7 +606,7 @@ importScripts("model_presets.js", "store.js", "err.js", "prompts.js", "parse.js"
           };
           prepareImageDataUrl(senderTabId, msg.imgSrc, prepOpts, perfSession, buildQualityOpts(cfg), function (prepErr, dataUrl) {
             if (prepErr) {
-              var prepCode = prepErr.message || "IMG_LOAD_FAIL";
+              var prepCode = normalizeImagePrepCode(prepErr, "IMG_LOAD_FAIL");
               ImgPrompterPerf.logTotal(perfSession, "analyze_total", { code: prepCode });
               var prepMsg = ImgPrompterErr.msg(prepCode);
               if (!prepMsg || prepMsg === prepCode) {
@@ -614,13 +674,9 @@ importScripts("model_presets.js", "store.js", "err.js", "prompts.js", "parse.js"
         sendResponse({ ok: false, code: "RECORD_EMPTY" });
         return true;
       }
-      chrome.tabs.query({ active: true, lastFocusedWindow: true }, function (tabs) {
-        var tab = tabs && tabs[0];
+      chrome.tabs.query({ lastFocusedWindow: true }, function (tabs) {
+        var tab = pickBestInjectableTab(tabs);
         if (!tab || !tab.id) {
-          sendResponse({ ok: false, code: "INJECT_BLOCKED" });
-          return;
-        }
-        if (!isInjectableUrl(tab.url || "")) {
           sendResponse({ ok: false, code: "INJECT_BLOCKED" });
           return;
         }
@@ -635,9 +691,9 @@ importScripts("model_presets.js", "store.js", "err.js", "prompts.js", "parse.js"
         sendResponse({ ok: false, code: "IMG_SRC_EMPTY" });
         return true;
       }
-      chrome.tabs.query({ active: true, lastFocusedWindow: true }, function (tabs) {
-        var tab = tabs && tabs[0];
-        if (!tab || !tab.id || !isInjectableUrl(tab.url || "")) {
+      chrome.tabs.query({ lastFocusedWindow: true }, function (tabs) {
+        var tab = pickBestInjectableTab(tabs);
+        if (!tab || !tab.id) {
           sendResponse({ ok: false, code: "INJECT_BLOCKED" });
           return;
         }

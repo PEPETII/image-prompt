@@ -104,6 +104,16 @@
           </select>
         </div>
 
+        <div class="form-group">
+          <label class="form-label" for="input-local-image">本地图片反推</label>
+          <input id="input-local-image" type="file" class="form-input" accept="image/*">
+          <p class="form-hint">选择本地图片后，会在当前可注入页面打开结果面板并开始分析。</p>
+          <div class="form-actions form-actions-inline">
+            <button id="btn-local-analyze" class="btn btn-outline" type="button">分析本地图片</button>
+            <span id="local-image-name" class="inline-hint">未选择图片</span>
+          </div>
+        </div>
+
         <div class="form-actions">
           <button id="btn-test" class="btn btn-outline">测试连接</button>
           <button id="btn-save" class="btn btn-primary">保存配置</button>
