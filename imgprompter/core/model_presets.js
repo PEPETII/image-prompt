@@ -93,8 +93,8 @@ var ImgPrompterModelPresets = (function () {
     },
     kimi: {
       apiUrl: DEFAULT_API_URLS.kimi,
-      model: "moonshot-v1-8k",
-      hint: "Kimi 兼容视觉模型请按你的网关与权限填写。",
+      model: "",
+      hint: "请填写支持视觉输入的 Kimi 模型（如 moonshot-v1-vision），普通文本模型无法识图。",
       allowCustom: true,
       models: [],
     },
@@ -189,7 +189,7 @@ var ImgPrompterModelPresets = (function () {
     custom: {
       apiUrl: "",
       model: "",
-      hint: "可填写任意兼容 API 地址与生图模型名称。",
+      hint: "支持 OpenAI 兼容（/images/generations）、Gemini（generateContent）、通义 DashScope、豆包 Seedream 等生图接口。Kimi/MiMo 等暂不支持自动生图。",
       allowCustom: true,
       models: [],
     },

@@ -199,6 +199,16 @@
   will-change: transform;
 }
 
+.ip-bar-inner.ip-bar-indeterminate {
+  animation: ipBarPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes ipBarPulse {
+  0% { transform: scaleX(0.03); }
+  50% { transform: scaleX(0.7); }
+  100% { transform: scaleX(0.03); }
+}
+
 .ip-status-text {
   font-size: 11px;
   color: var(--muted);
@@ -678,6 +688,15 @@
   pointer-events: none;
 }
 
+.ip-btn-cancel {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #fff;
+}
+.ip-btn-cancel:hover {
+  background: #991b1b;
+}
+
 .ip-rewrite-badge {
   display: inline-block;
   padding: 2px 8px;
@@ -703,7 +722,7 @@
   box-shadow: var(--shadow-card);
   z-index: 2147483647;
   animation: ipToastIn 0.2s ease;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 @keyframes ipToastIn {

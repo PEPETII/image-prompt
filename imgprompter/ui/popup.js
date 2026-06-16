@@ -505,9 +505,23 @@
         : inputModel;
       setFieldErr(modelFieldEl, errModel, ImgPrompterErr.msg("OPENAI_VISION_5X"));
       valid = false;
+    } else if (looksLikeNonVisionModel(selectPlatform.value, model)) {
+      modelFieldEl = isVisionPresetPickerActive() &&
+        selectVisionPresetModel &&
+        selectVisionPresetModel.value !== VISION_MODEL_CUSTOM
+        ? selectVisionPresetModel
+        : inputModel;
+      setFieldErr(modelFieldEl, errModel, ImgPrompterErr.msg("MODEL_NO_VISION"));
+      valid = false;
     }
 
     return valid;
+  }
+
+  function looksLikeNonVisionModel(platform, model) {
+    var m = String(model || "").trim().toLowerCase();
+    if (!m || platform !== "kimi") return false;
+    return /^moonshot-v1-(8k|32k|128k)$/.test(m);
   }
 
   function clearAllGenFieldErrs() {

@@ -18,6 +18,8 @@
   var generatingImage = false;
   var barAnimTimers = [];
   var cachedQualityMode = "standard";
+  var toastQueue = [];
+  var toastShowing = false;
 
   var JSON_FIELD_LABELS = {
     brief: "摘要",
@@ -148,12 +150,25 @@
     });
     handleEl.addEventListener("pointermove", function (e) {
       if (!dragging) return;
-      cardEl.style.left = (e.clientX - offset.x) + "px";
-      cardEl.style.top = (e.clientY - offset.y) + "px";
+      var newLeft = e.clientX - offset.x;
+      var newTop = e.clientY - offset.y;
+      var margin = 10;
+      var maxLeft = window.innerWidth - cardEl.offsetWidth - margin;
+      var maxTop = window.innerHeight - cardEl.offsetHeight - margin;
+      newLeft = Math.max(margin, Math.min(newLeft, maxLeft));
+      newTop = Math.max(margin, Math.min(newTop, maxTop));
+      cardEl.style.left = newLeft + "px";
+      cardEl.style.top = newTop + "px";
       cardEl.style.position = "fixed";
       cardEl.style.transform = "none";
     });
     handleEl.addEventListener("pointerup", function () { dragging = false; });
+    handleEl.addEventListener("dblclick", function () {
+      cardEl.style.left = "";
+      cardEl.style.top = "";
+      cardEl.style.position = "";
+      cardEl.style.transform = "";
+    });
   }
 
   function ce(tag, cls, text) {
@@ -198,31 +213,36 @@
   }
 
   function showToast(text) {
+    toastQueue.push(text);
+    flushToastQueue();
+  }
+
+  function flushToastQueue() {
+    if (toastShowing || toastQueue.length === 0) return;
+    toastShowing = true;
+    var text = toastQueue.shift();
     var root = getRoot();
-    if (!root) return;
+    if (!root) { toastShowing = false; return; }
     var toast = ce("div", "ip-toast", text);
+    toast.setAttribute("aria-live", "polite");
+    toast.addEventListener("click", function () {
+      if (toast.parentNode) toast.remove();
+      toastShowing = false;
+      setTimeout(flushToastQueue, 50);
+    });
     root.appendChild(toast);
     setTimeout(function () {
       if (toast.parentNode) toast.remove();
+      toastShowing = false;
+      setTimeout(flushToastQueue, 50);
     }, 1800);
   }
 
   function animateBar(bar) {
     barAnimTimers.forEach(clearTimeout);
     barAnimTimers = [];
-    var steps = [
-      { s: 0.15, delay: 150 },
-      { s: 0.30, delay: 400 },
-      { s: 0.45, delay: 800 },
-      { s: 0.55, delay: 1200 },
-    ];
-    steps.forEach(function (step) {
-      barAnimTimers.push(setTimeout(function () {
-        if (bar.isConnected) {
-          bar.style.transform = "scaleX(" + step.s + ")";
-        }
-      }, step.delay));
-    });
+    bar.classList.add("ip-bar-indeterminate");
+    bar.style.transform = "";
   }
 
   function showNoConfig() {
@@ -231,13 +251,17 @@
     root.innerHTML = "";
 
     var card = ce("div", "ip-card");
+    card.setAttribute("role", "dialog");
+    card.setAttribute("aria-modal", "true");
     var dragHead = ce("div", "ip-drag-head");
     var closeBtn = ce("button", "ip-close", "\u2715");
+    closeBtn.setAttribute("aria-label", "关闭");
     closeBtn.addEventListener("click", removeHost);
     dragHead.appendChild(closeBtn);
     card.appendChild(dragHead);
 
     var icon = ce("div", "ip-icon-warn", "\u26A0");
+    icon.setAttribute("aria-label", "警告");
     card.appendChild(icon);
     var title = ce("div", "ip-panel-title", "尚未配置 API");
     card.appendChild(title);
@@ -261,8 +285,11 @@
     root.innerHTML = "";
 
     var card = ce("div", "ip-card");
+    card.setAttribute("role", "dialog");
+    card.setAttribute("aria-modal", "true");
     var dragHead = ce("div", "ip-drag-head");
     var closeBtn = ce("button", "ip-close", "\u2715");
+    closeBtn.setAttribute("aria-label", "关闭");
     closeBtn.addEventListener("click", removeHost);
     dragHead.appendChild(closeBtn);
     card.appendChild(dragHead);
@@ -300,9 +327,15 @@
     var root = getRoot();
     if (!root) return;
     var bar = root.querySelector(".ip-bar-inner");
-    if (bar && typeof pct === "number") {
-      var scale = Math.min(1, Math.max(0, pct / 100));
-      bar.style.transform = "scaleX(" + scale + ")";
+    if (bar) {
+      if (typeof pct === "number" && pct >= 0) {
+        bar.classList.remove("ip-bar-indeterminate");
+        var scale = Math.min(1, Math.max(0, pct / 100));
+        bar.style.transform = "scaleX(" + scale + ")";
+      } else {
+        bar.classList.add("ip-bar-indeterminate");
+        bar.style.transform = "";
+      }
     }
     var status = root.querySelector(".ip-status-text");
     if (status) status.textContent = statusText;
@@ -328,13 +361,17 @@
     root.innerHTML = "";
 
     var card = ce("div", "ip-card ip-card-err");
+    card.setAttribute("role", "dialog");
+    card.setAttribute("aria-modal", "true");
     var dragHead = ce("div", "ip-drag-head");
     var closeBtn = ce("button", "ip-close", "\u2715");
+    closeBtn.setAttribute("aria-label", "关闭");
     closeBtn.addEventListener("click", removeHost);
     dragHead.appendChild(closeBtn);
     card.appendChild(dragHead);
 
     var icon = ce("div", "ip-icon-err", "\u2716");
+    icon.setAttribute("aria-label", "错误");
     card.appendChild(icon);
     var title = ce("div", "ip-panel-title", errorTitle || "分析失败");
     card.appendChild(title);
@@ -402,9 +439,12 @@
     root.innerHTML = "";
 
     var card = ce("div", "ip-card ip-card-result");
+    card.setAttribute("role", "dialog");
+    card.setAttribute("aria-modal", "true");
 
     var dragHead = ce("div", "ip-drag-head");
     var closeBtn = ce("button", "ip-close", "\u2715");
+    closeBtn.setAttribute("aria-label", "关闭");
     closeBtn.addEventListener("click", removeHost);
 
     var headTitle = ce("span", "ip-head-title", "看图写提示词");
@@ -756,7 +796,18 @@
     var inputEl = getRoot() ? getRoot().querySelector("#ip-modify-input") : null;
     var submitBtn = getRoot() ? getRoot().querySelector("#ip-modify-submit") : null;
     if (inputEl) { inputEl.disabled = true; inputEl.value = instruction; }
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "修改中..."; submitBtn.classList.add("ip-btn-loading"); }
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "取消";
+      submitBtn.classList.remove("ip-btn-loading");
+      submitBtn.classList.add("ip-btn-cancel");
+      submitBtn.onclick = function () {
+        rewriting = false;
+        restoreModifyUi();
+        showToast("已取消重写");
+        submitBtn.onclick = null;
+      };
+    }
 
     var styleTags = getRoot() ? getRoot().querySelectorAll(".ip-style-tag") : [];
     for (var i = 0; i < styleTags.length; i++) { styleTags[i].disabled = true; }
@@ -793,7 +844,7 @@
     var inputEl = root.querySelector("#ip-modify-input");
     var submitBtn = root.querySelector("#ip-modify-submit");
     if (inputEl) { inputEl.disabled = false; inputEl.value = ""; }
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "修改"; submitBtn.classList.remove("ip-btn-loading"); }
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "修改"; submitBtn.classList.remove("ip-btn-loading"); submitBtn.classList.remove("ip-btn-cancel"); submitBtn.onclick = null; }
     var styleTags = root.querySelectorAll(".ip-style-tag");
     for (var i = 0; i < styleTags.length; i++) { styleTags[i].disabled = false; }
     setPromptEditorDisabled(false);
@@ -1488,6 +1539,13 @@
     if (/network|fetch|failed.to.fetch/i.test(s)) return ImgPrompterErr.msg("NETWORK");
     return ImgPrompterErr.msg("IMG_LOAD_FAIL");
   }
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      var host = document.getElementById(SHADOW_HOST_ID);
+      if (host) removeHost();
+    }
+  });
 
   chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     if (msg.type === "imgprompter-no-config") {
