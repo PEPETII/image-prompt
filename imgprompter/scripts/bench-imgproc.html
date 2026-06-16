@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ImgProc Bench</title>
+</head>
+<body>
+  <script src="../core/imgproc.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      async function fetchAsDataUrl(url) {
+        const t0 = performance.now();
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const t1 = performance.now();
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        const t2 = performance.now();
+        return {
+          fetchMs: +(t1 - t0).toFixed(2),
+          readAsDataUrlMs: +(t2 - t1).toFixed(2),
+          totalMs: +(t2 - t0).toFixed(2),
+          blobSize: blob.size,
+          dataUrl,
+        };
+      }
+
+      async function run() {
+        const query = new URLSearchParams(location.search);
+        const src = query.get("src");
+        if (!src) {
+          document.body.textContent = "missing ?src=";
+          return;
+        }
+
+        const base = await fetchAsDataUrl(src);
+        const fastStart = performance.now();
+        const fast = await ImgPrompterImgProc.compressFromDataUrl(base.dataUrl, null, { imageQualityMode: "fast" });
+        const fastEnd = performance.now();
+
+        const standardStart = performance.now();
+        const standard = await ImgPrompterImgProc.compressFromDataUrl(base.dataUrl, null, { imageQualityMode: "standard" });
+        const standardEnd = performance.now();
+
+        const highStart = performance.now();
+        const high = await ImgPrompterImgProc.compressFromDataUrl(base.dataUrl, null, { imageQualityMode: "high" });
+        const highEnd = performance.now();
+
+        const result = {
+          src,
+          base: {
+            fetchMs: base.fetchMs,
+            readAsDataUrlMs: base.readAsDataUrlMs,
+            totalMs: base.totalMs,
+            blobSize: base.blobSize,
+            dataUrlBytes: base.dataUrl.length,
+          },
+          fast: {
+            ms: +(fastEnd - fastStart).toFixed(2),
+            compressedBytes: fast.compressedBytes,
+            width: fast.compressedWidth,
+            height: fast.compressedHeight,
+          },
+          standard: {
+            ms: +(standardEnd - standardStart).toFixed(2),
+            compressedBytes: standard.compressedBytes,
+            width: standard.compressedWidth,
+            height: standard.compressedHeight,
+          },
+          high: {
+            ms: +(highEnd - highStart).toFixed(2),
+            compressedBytes: high.compressedBytes,
+            width: high.compressedWidth,
+            height: high.compressedHeight,
+          },
+        };
+
+        document.body.innerHTML = "<pre>" + JSON.stringify(result, null, 2) + "</pre>";
+      }
+
+      run().catch(function (err) {
+        document.body.innerHTML = "<pre>" + String(err && err.stack || err) + "</pre>";
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -85,12 +85,10 @@ var ImgPrompterPrompts = (function () {
 
   function buildJsonAnalyzeSysPrompt() {
     return [
-      "你是一名专业的视觉分析师、图像导演和 AI 生图提示词工程师。",
-      "根据用户上传的图片，准确分析并反推可用于 AI 生图的高质量提示词。",
-      "目标不是写夸张文案，而是还原真实视觉信息：主体、场景、动作、构图、光线、色彩、风格、镜头、材质、氛围和关键细节。",
-      "分析原则：优先描述可见信息；不编造无法确认的品牌、人物身份、IP、地点；不用空泛词（高级感、好看、震撼、高清、精美等）除非能说明原因；",
-      "无法判断的字段填空字符串或空数组；适合 Midjourney、Stable Diffusion、GPT Image、Gemini Image 等模型。",
-      "必须输出严格合法 JSON，不要 Markdown，不要解释，不要 JSON 外任何文字。",
+      "你是图像分析与生图提示词助手。",
+      "根据图片提取可见视觉信息，并整理成可直接用于生图的结构化结果。",
+      "只描述能确认的内容，不编造人物身份、品牌、地点或不可见细节。",
+      "只输出严格合法 JSON，不要 Markdown，不要解释，不要 JSON 外任何文字。",
     ].join("");
   }
 
@@ -98,12 +96,10 @@ var ImgPrompterPrompts = (function () {
     var jsonFmt = buildJsonFormat(lang, format);
     return [
       buildLanguageRule(lang, format),
-      "重点分析：主体、外观服饰材质状态、场景环境、构图、光线、色彩、风格、镜头景别、材质纹理、情绪氛围、影响复现的关键细节。",
-      "brief 不超过40字；key_details 3-8条；有文字只描述可见内容与排版，不猜小字。",
-      "prompt_zh 为完整中文生图提示词，自然流畅，整合主体/场景/构图/光线/色彩/风格/镜头/材质/氛围，可直接复制生图。",
-      "prompt_en 为完整英文生图提示词，符合英文生图习惯，不要仅中文直译。",
-      "negative_prompt 根据画面类型写负面提示，不要固定套模板。",
-      "输出前自检：prompt_zh 与 prompt_en 能否复现原图约80%以上的主体、风格、构图、光线与氛围。",
+      "分析主体、场景、动作、构图、光线、色彩、风格、镜头、材质、氛围和关键细节。",
+      "只写可见信息；不确定就留空字符串或空数组。",
+      "brief 简短准确；key_details 写 3-8 条；画面文字只描述可见内容，不猜测小字。",
+      "prompt_zh、prompt_en 写成可直接生图的完整提示词；negative_prompt 根据画面内容生成。",
       "严格按以下 JSON 模板输出，不得增减字段：",
       jsonFmt,
     ].join("\n");

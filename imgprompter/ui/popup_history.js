@@ -15,6 +15,7 @@ var ImgPrompterPopupHistory = (function () {
 
   PopupHistory.prototype._onClearClick = function () {
     if (!this.clearBtnEl) return;
+    if (!confirm("确定要清空所有历史记录吗？此操作不可撤销。")) return;
     var btn = this.clearBtnEl;
     chrome.runtime.sendMessage({ type: "imgprompter-clear-history" }, function (resp) {
       if (chrome.runtime.lastError || !resp || !resp.ok) return;
