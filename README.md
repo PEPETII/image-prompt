@@ -12,7 +12,9 @@
 第四步：导入成功
 <img width="2503" height="1242" alt="屏幕截图 2026-06-16 234506" src="https://github.com/user-attachments/assets/aec040cd-c912-4ba7-8753-824a5a05ddda" />
 
-第五步：依旧右上角积木按钮点击框选区域，选择固定
+
+第五步：依旧右上角积木按钮点击框选区域，选择固定按钮
+
 <img width="616" height="874" alt="屏幕截图 2026-06-16 234609" src="https://github.com/user-attachments/assets/e142f4db-9109-4dfc-ad98-e7107ee1b1b0" />
 
 第六步：点击固定后出现的图标（已框选）就可以使用了
