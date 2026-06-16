@@ -1,19 +1,20 @@
-<img width="616" height="874" alt="image" src="https://github.com/user-attachments/assets/3c6d86e4-23fc-4fe8-ab42-f72e7c90de33" /><img width="2503" height="1242" alt="image" src="https://github.com/user-attachments/assets/186d3efe-4a33-4bd4-973d-67296436630a" /># ImgPrompter Repository
-
-<img width="569" height="902" alt="屏幕截图 2026-06-04 232334" src="https://github.com/user-attachments/assets/5a25c995-06c0-414d-b13a-f7d211f38194" />
-<img width="2523" height="1238" alt="屏幕截图 2026-06-04 233650" src="https://github.com/user-attachments/assets/c7c0b3fa-24b3-496a-baf9-a8fd5255d057" />
 
 使用方法：
 第一步：点击edge浏览器右上角的积木按钮然后点击“管理扩展”按钮
 <img width="587" height="870" alt="image" src="https://github.com/user-attachments/assets/f0a31add-6f1c-4ecb-8cda-9346cc9f99f9" />
+
 第二步：点击标红区域
 <img width="2509" height="1234" alt="屏幕截图 2026-06-16 234150" src="https://github.com/user-attachments/assets/e2745b24-2d87-4ed2-aa00-1e60bced8cba" />
+
 第三步：选择下载的文件夹即可
 <img width="1104" height="260" alt="屏幕截图 2026-06-16 234412" src="https://github.com/user-attachments/assets/1c3935ef-1db8-452c-aefc-8197bead3354" />
+
 第四步：导入成功
 <img width="2503" height="1242" alt="屏幕截图 2026-06-16 234506" src="https://github.com/user-attachments/assets/aec040cd-c912-4ba7-8753-824a5a05ddda" />
+
 第五步：依旧右上角积木按钮点击框选区域，选择固定
 <img width="616" height="874" alt="屏幕截图 2026-06-16 234609" src="https://github.com/user-attachments/assets/e142f4db-9109-4dfc-ad98-e7107ee1b1b0" />
+
 第六步：点击固定后出现的图标（已框选）就可以使用了
 <img width="655" height="956" alt="屏幕截图 2026-06-16 234727" src="https://github.com/user-attachments/assets/7acac13a-22c9-4a24-ae8f-2190d5b6d1cd" />
 
